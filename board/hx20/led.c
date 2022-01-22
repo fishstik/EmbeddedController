@@ -216,13 +216,34 @@ static void set_active_port_color(int color)
 	if (led_auto_control_is_enabled(EC_LED_ID_LEFT_LED)) {
 		port_charging_active = gpio_get_level(GPIO_TYPEC2_VBUS_ON_EC) ||
 								gpio_get_level(GPIO_TYPEC3_VBUS_ON_EC);
-		set_pwm_led_color(PWM_LED0, port_charging_active ? color : -1);
+		if (port_charging_active)
+			set_pwm_led_color(PWM_LED0, color);
 	}
 
 	if (led_auto_control_is_enabled(EC_LED_ID_RIGHT_LED)) {
 		port_charging_active = gpio_get_level(GPIO_TYPEC0_VBUS_ON_EC) ||
 								gpio_get_level(GPIO_TYPEC1_VBUS_ON_EC);
-		set_pwm_led_color(PWM_LED1, port_charging_active ? color : -1);
+		if (port_charging_active)
+			set_pwm_led_color(PWM_LED1, color);
+	}
+}
+
+static void set_inactive_port_color(int color)
+{
+	int port_charging_active = 0;
+
+	if (led_auto_control_is_enabled(EC_LED_ID_LEFT_LED)) {
+		port_charging_active = gpio_get_level(GPIO_TYPEC2_VBUS_ON_EC) ||
+								gpio_get_level(GPIO_TYPEC3_VBUS_ON_EC);
+		if (!port_charging_active)
+			set_pwm_led_color(PWM_LED0, color);
+	}
+
+	if (led_auto_control_is_enabled(EC_LED_ID_RIGHT_LED)) {
+		port_charging_active = gpio_get_level(GPIO_TYPEC0_VBUS_ON_EC) ||
+								gpio_get_level(GPIO_TYPEC1_VBUS_ON_EC);
+		if (!port_charging_active)
+			set_pwm_led_color(PWM_LED1, color);
 	}
 }
 
@@ -269,6 +290,10 @@ static void led_set_battery(void)
 		break;
 	}
 
+	if (chipset_in_state(CHIPSET_STATE_ANY_SUSPEND)) {
+		set_inactive_port_color((battery_ticks & 0x4) ?
+			EC_LED_COLOR_WHITE : -1);
+	}
 }
 
 static void led_set_power(void)
